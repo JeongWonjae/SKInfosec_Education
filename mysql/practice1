@@ -1,0 +1,48 @@
+#'Seattle'에 있는 부서에 근무하는 사원의 이름을 보이시오.(조인사용)
+
+SELECT CONCAT(e.first_name,' ',e.last_name) AS '사원의 이름'
+FROM departments d, employees e, locations l
+WHERE d.department_id=e.department_id AND d.location_id=l.location_id AND
+		l.city='Seattle';
+
+#'Seattle'에 있는 부서에 근무하는 사원의 이름을 보이시오.(인라인뷰)
+
+SELECT CONCAT(first_name,' ',last_name) AS '사원의 이름'
+FROM (SELECT d.department_id, l.city
+		FROM departments d, locations l
+		WHERE d.location_id=l.location_id AND l.city LIKE 'Seattle') AS dl, employees e
+WHERE dl.department_id=e.department_id;
+
+#'Seattle'에 있는 부서에 근무하는 사원의 이름을 보이시오.(중첩질의)
+
+SELECT CONCAT(first_name,' ',last_name) AS '사원의 이름'
+FROM employees
+WHERE department_id IN (
+SELECT department_id
+FROM departments
+WHERE location_id=(
+SELECT location_id
+FROM locations
+WHERE city LIKE "Seattle"));
+
+#95년 이전에 고용된 유럽 국적인 직원의 평균 월급(조인)
+
+SELECT ROUND(AVG(e.salary), -2)
+FROM employees e, emp_details_view v
+WHERE v.employee_id=e.employee_id AND e.hire_date<'1995-01-01' AND v.region_name LIKE 'Europe';
+
+#95년 이전에 고용된 유럽 국적인 직원의 평균 월급(인라인뷰)
+
+SELECT ROUND(AVG(e.salary), -2)
+FROM employees e, (SELECT employee_id FROM emp_details_view WHERE region_name='Europe') AS v
+WHERE e.employee_id=v.employee_id AND e.hire_date<'1995-01-01';
+
+#95년 이전에 고용된 유럽 국적인 직원의 평균 월급(중첩질의)
+
+SELECT ROUND(AVG(salary), -2)
+FROM employees
+WHERE employee_id IN (
+SELECT employee_id
+FROM emp_details_view
+WHERE region_name='Europe') AND hire_date<'1995-01-01';
+
