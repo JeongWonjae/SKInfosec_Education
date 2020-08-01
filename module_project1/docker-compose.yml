@@ -1,0 +1,18 @@
+version: "3"
+services:
+  mysql:
+    image: justv95/mysql:2.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql
+      MYSQL_DATABASE: car
+      MYSQL_ALLOW_EMPTY_PASSWORD: "mysql"
+    ports:
+      - "10005:3306"
+    command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+
+  python:
+    image: justv95/python:2.0
+    depends_on:
+      - mysql
+    command: tail -f /dev/null
