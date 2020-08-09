@@ -1,0 +1,221 @@
+-- MySQL Workbench Forward Engineering
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+-- -----------------------------------------------------
+-- Schemacar
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schemacar
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `car` DEFAULT CHARACTER SET utf8 ;
+USE `car` ;
+
+-- -----------------------------------------------------
+-- Table `car`.`salesperson`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `car`.`salesperson` (
+  `salesperson_id` VARCHAR(15) NOT NULL,
+  `salesperson_name` VARCHAR(20) NOT NULL,
+  `salesperson_phone` VARCHAR(45) NOT NULL,
+  `salesperson_email` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`salesperson_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `car`.`customer`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `car`.`customer` (
+  `customer_id` VARCHAR(15) NOT NULL,
+  `customer_name` VARCHAR(20) NULL,
+  `phone_number` VARCHAR(45) NULL,
+  `address` VARCHAR(45) NULL,
+  PRIMARY KEY (`customer_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `car`.`car_menu`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `car`.`car_menu` (
+  `car_id` VARCHAR(15) NOT NULL,
+  `car_model` VARCHAR(45) NOT NULL,
+  `car_color` VARCHAR(45) NOT NULL,
+  `new_old_state` CHAR(3) NOT NULL,
+  `serial_number` VARCHAR(45) NOT NULL,
+  `car_year` INT NOT NULL,
+  `car_price` INT NOT NULL,
+  PRIMARY KEY (`car_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `car`.`order_details`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `car`.`order_details` (
+  `order_id` VARCHAR(15) NOT NULL,
+  `customer_id` VARCHAR(15) NULL,
+  `product_id` VARCHAR(15) NULL,
+  `car_menu_car_id` VARCHAR(15) NOT NULL,
+  `car_price` INT NULL,
+  PRIMARY KEY (`order_id`),
+  INDEX `fk_orders_car_menu1_idx` (`car_menu_car_id` ASC)  ,
+  CONSTRAINT `fk_orders_car_menu1`
+    FOREIGN KEY (`car_menu_car_id`)
+    REFERENCES `car`.`car_menu` (`car_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `car`.`sales_invoice`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `car`.`sales_invoice` (
+  `invoice_id` VARCHAR(15) NOT NULL,
+  `customer_customer_id` VARCHAR(15) NOT NULL,
+  `salesperson_salesperson_id` VARCHAR(15) NOT NULL,
+  `order_details_order_id` VARCHAR(15) NOT NULL,
+  PRIMARY KEY (`invoice_id`, `order_details_order_id`),
+  INDEX `fk_sales_invoice_customer1_idx` (`customer_customer_id` ASC)  ,
+  INDEX `fk_sales_invoice_salesperson1_idx` (`salesperson_salesperson_id` ASC)  ,
+  INDEX `fk_sales_invoice_order_details1_idx` (`order_details_order_id` ASC)  ,
+  CONSTRAINT `fk_sales_invoice_customer1`
+    FOREIGN KEY (`customer_customer_id`)
+    REFERENCES `car`.`customer` (`customer_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_sales_invoice_salesperson1`
+    FOREIGN KEY (`salesperson_salesperson_id`)
+    REFERENCES `car`.`salesperson` (`salesperson_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_sales_invoice_order_details1`
+    FOREIGN KEY (`order_details_order_id`)
+    REFERENCES `car`.`order_details` (`order_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `car`.`service_menu`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `car`.`service_menu` (
+  `service_id` VARCHAR(15) NOT NULL,
+  `service_name` VARCHAR(45) NOT NULL,
+  `service_price` VARCHAR(45) NOT NULL,
+  `need_product` VARCHAR(5) NOT NULL,
+  PRIMARY KEY (`service_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `car`.`mechanic`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `car`.`mechanic` (
+  `mechanic_id` VARCHAR(15) NOT NULL,
+  `mechanic_phone` VARCHAR(45) NOT NULL,
+  `mechanic_email` VARCHAR(45) NOT NULL,
+  `mechanic_name` VARCHAR(20) NOT NULL,
+  `mechanic_manager` VARCHAR(45) NULL,
+  `worktime` VARCHAR(45) NULL,
+  PRIMARY KEY (`mechanic_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `car`.`product_menu`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `car`.`product_menu` (
+  `parts_id` VARCHAR(15) NOT NULL,
+  `parts_name` VARCHAR(20) NOT NULL,
+  `parts_price` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`parts_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `car`.`product`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `car`.`product` (
+  `product_id` VARCHAR(15) NOT NULL,
+  `parts_id` VARCHAR(15) NOT NULL,
+  `service_menu_service_id` VARCHAR(15) NOT NULL,
+  `product_name` VARCHAR(45) NOT NULL,
+  INDEX `fk_product_product_menu1_idx` (`parts_id` ASC)  ,
+  INDEX `fk_product_service_menu1_idx` (`service_menu_service_id` ASC)  ,
+  PRIMARY KEY (`product_id`),
+  CONSTRAINT `fk_product_product_menu1`
+    FOREIGN KEY (`parts_id`)
+    REFERENCES `car`.`product_menu` (`parts_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_product_service_menu1`
+    FOREIGN KEY (`service_menu_service_id`)
+    REFERENCES `car`.`service_menu` (`service_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `car`.`service_records`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `car`.`service_records` (
+  `service_record_id` VARCHAR(15) NOT NULL,
+  `service_id` VARCHAR(15) NOT NULL,
+  `product_id` VARCHAR(15) NULL,
+  `service_ticket_id` VARCHAR(45) NOT NULL,
+  `appointment` VARCHAR(20) NULL,
+  `customer_customer_id` VARCHAR(15) NOT NULL,
+  PRIMARY KEY (`service_record_id`),
+  INDEX `fk_service_service_menu1_idx` (`service_id` ASC)  ,
+  INDEX `fk_service_product_menu1_idx` (`product_id` ASC)  ,
+  INDEX `fk_service_records_customer1_idx` (`customer_customer_id` ASC)  ,
+  CONSTRAINT `fk_service_service_menu1`
+    FOREIGN KEY (`service_id`)
+    REFERENCES `car`.`service_menu` (`service_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_service_product_menu1`
+    FOREIGN KEY (`product_id`)
+    REFERENCES `car`.`product` (`product_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_service_records_customer1`
+    FOREIGN KEY (`customer_customer_id`)
+    REFERENCES `car`.`customer` (`customer_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `car`.`management`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `car`.`management` (
+  `mechanic_mechanic_id` VARCHAR(15) NOT NULL,
+  `service_record_id` VARCHAR(15) NOT NULL,
+  INDEX `fk_management_mechanic1_idx` (`mechanic_mechanic_id` ASC)  ,
+  INDEX `fk_management_service_records1_idx` (`service_record_id` ASC)  ,
+  CONSTRAINT `fk_management_mechanic1`
+    FOREIGN KEY (`mechanic_mechanic_id`)
+    REFERENCES `car`.`mechanic` (`mechanic_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_management_service_records1`
+    FOREIGN KEY (`service_record_id`)
+    REFERENCES `car`.`service_records` (`service_record_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
