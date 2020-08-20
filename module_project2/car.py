@@ -5,6 +5,9 @@ import datetime
 from beautifultable import BeautifulTable
 import requests
 
+valueList = []
+
+
 def get_weekday(num):
     if (num == 0):
         return "Mon"
@@ -20,6 +23,7 @@ def get_weekday(num):
         return 'Sat'
     elif (num == 6):
         return 'Sun'
+
 
 if __name__ == '__main__':
 
@@ -42,8 +46,8 @@ ZZZZj        ZZ99E98z8BDDBBz8zzzz89E99ZZ        WZZZZ
 ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
     ''')
 
-    conn = pymysql.connect(host='project-car.comzsnafugrl.us-east-2.rds.amazonaws.com', port=3306, user='admin',password='rlatjrwn123', db='car', charset='utf8')
-    curs = conn.cursor()
+    # conn = pymysql.connect(host='project-car.comzsnafugrl.us-east-2.rds.amazonaws.com', port=3306, user='admin',password='rlatjrwn123', db='car', charset='utf8')
+    # curs = conn.cursor()
 
     while True:
         try:
@@ -62,7 +66,7 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                 if customer == 1:  # 가입
                     # id 생성
                     custid_f = 'C'
-                    URL = "http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/getId?tName=customer&tAttr=customer_id&pLen=1"
+                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/getId?tName=customer&tAttr=customer_id&pLen=1"
                     response = requests.get(URL)
                     res = response.json()
 
@@ -73,11 +77,12 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                         custid = custid_f + custid_b
 
                     custinfo = input('이름,번호,주소를 입력해주세요 *한글 또는 영어로 입력(,로 구분)*->').split(',')
-                    URL = "http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/addCustomer?custid="+custid+"&name="+custinfo[0]+"&phone="+str(custinfo[1])+"&addr="+custinfo[2]
+                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/addCustomer?custid=" + custid + "&name=" + \
+                          custinfo[0] + "&phone=" + str(custinfo[1]) + "&addr=" + custinfo[2]
                     response = requests.get(URL)
-                    #http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/addCustomer?custid=C0030&name=wonjae&phone=010&addr=seoul
+                    # http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/addCustomer?custid=C0030&name=wonjae&phone=010&addr=seoul
                 elif customer == 2:  # 조회
-                    URL = 'http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/customers'
+                    URL = 'http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/customers'
                     response = requests.get(URL)
                     res = response.json()
                     table = BeautifulTable()
@@ -92,69 +97,67 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                 elif customer == 3:  # 수정
 
                     custid = input('고객아이디를 입력해주세요 ex)C0001 ->').upper()
-                    selectSQL = "select * from customer where customer_id=%s"
-                    curs.execute(selectSQL, (custid))
-                    fetch_data = curs.fetchone()
-                    if (fetch_data is None):
-                        print("존재하지 않는 고객입니다. 고객메뉴로 돌아갑니다.")
-                        continue
-                    table = BeautifulTable()
-                    table.columns.header = ["고객 ID", "이름", "전화번호", "주소"]
-                    table.rows.append([fetch_data[0], fetch_data[1], fetch_data[2], fetch_data[3]])
-                    print(table)
+                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/customer?id=" + custid
+                    response = requests.get(URL)
+                    res = response.json()
+
+                    if (res is None):
+                        print("존재하지 않는 고객입니다.")
+                        break
+                    else:
+                        del valueList[:]
+                        table = BeautifulTable()
+                        table.columns.header = ["고객 ID", "이름", "전화번호", "주소"]
+                        for key, value in res[0].items():
+                            valueList.append(str(value))
+                        table.rows.append([valueList[0], valueList[1], valueList[2], valueList[3]])
+                        print(table)
 
                     select = int(input('수정할 정보를 선택해주세요 1)이름 2)핸드폰번호 3)주소->'))
                     while (True):
                         if select == 1:  # 이름 수정
                             new_name = input('변경할 이름을 입력하세요 ->')
-                            updateSQL = "update customer set customer_name=%s where customer_id=%s"
-                            curs.execute(updateSQL, (new_name, custid))
-                            conn.commit()
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/updateCustomer?type=customer_name&content=" + new_name + "&id=" + custid
+                            response = requests.get(URL)
                             break
                         elif select == 2:  # 번호 수정
                             new_phone = input('변경할 번호를 입력하세요 ->')
-                            updateSQL = "update customer set phone_number=%s where customer_id=%s"
-                            curs.execute(updateSQL, (new_phone, custid))
-                            conn.commit()
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/updateCustomer?type=phone_number&content=" + new_phone + "&id=" + custid
+                            response = requests.get(URL)
                             break
                         elif select == 3:  # 주소 수정
                             new_address = input('변경할 주소를 입력하세요 ->')
-                            updateSQL = "update customer set address=%s where customer_id=%s"
-                            curs.execute(updateSQL, (new_address, custid))
-                            conn.commit()
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/updateCustomer?type=address&content=" + new_address + "&id=" + custid
+                            response = requests.get(URL)
                             break
                         else:
                             print("번호를 잘못 입력하였습니다.")
                             break
                 elif customer == 4:
                     custid = input('삭제할 고객아이디를 입력해주세요 ex)C0001 ->').upper()
-                    selectSQL = "select * from customer where customer_id=%s"
-                    curs.execute(selectSQL, (custid))
-                    fetch_data = curs.fetchone()
-                    if (fetch_data is None):
-                        print("존재하지 않는 고객입니다. 고객메뉴로 돌아갑니다.")
-                        continue
-                    table = BeautifulTable()
-                    table.columns.header = ["고객 ID", "이름", "전화번호", "주소"]
-                    table.rows.append([fetch_data[0], fetch_data[1], fetch_data[2], fetch_data[3]])
-                    print(table)
+                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/customer?id=" + custid
+                    response = requests.get(URL)
+                    res = response.json()
 
-                    ask = input("정말 삭제하시겠습니까? (Y/N)->").lower()
-                    if ask == 'y':
-                        try:
-                            deleteSQL = "delete from sales_invoice where customer_customer_id=%s"
-                            curs.execute(deleteSQL, (custid))
-                            conn.commit()
-                            deleteSQL = "delete from order_details where customer_id=%s"
-                            curs.execute(deleteSQL, (custid))
-                            conn.commit()
-                        except:
-                            print()
-                        deleteSQL = "delete from customer where customer_id=%s"
-                        curs.execute(deleteSQL, (custid))
-                        conn.commit()
+                    if (res is None):
+                        print("존재하지 않는 고객입니다.")
+                        break
                     else:
-                        print()
+                        del valueList[:]
+                        table = BeautifulTable()
+                        table.columns.header = ["고객 ID", "이름", "전화번호", "주소"]
+                        for key, value in res[0].items():
+                            valueList.append(str(value))
+                        table.rows.append([valueList[0], valueList[1], valueList[2], valueList[3]])
+                        print(table)
+
+                    try:
+                        URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/customerdelete?id=" + custid
+                        response = requests.get(URL)
+                        print("성공적으로 삭제되었습니다.")
+                    except:
+                        print("삭제에 실패하였습니다.")
+
                 elif customer == 5:
                     break
                 else:
@@ -168,7 +171,7 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                 if car == 1:  # 추가
                     # 자동차 아이디 생성
                     carid_f = 'CAR'
-                    URL = "http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/getId?tName=car_menu&tAttr=car_id&pLen=3"
+                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/getId?tName=car_menu&tAttr=car_id&pLen=3"
                     response = requests.get(URL)
                     res = response.json()
 
@@ -178,14 +181,14 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                         carid_b = res[0]['id']
                         carid = carid_f + carid_b
 
-
                     carinfo = input('모델명,색,상태(NEW|OLD),일련번호,제작년도,가격 *한글 또는 영어로 입력(,로 구분)*->').split(',')
-                    URL = "http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/addCar?carid=" + carid + "&model=" + \
-                          carinfo[0] + "&color=" + str(carinfo[1]) + "&status=" + carinfo[2]+ "&number=" + carinfo[3]+ "&year=" + carinfo[4]+ "&price=" + carinfo[5]
+                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/addCar?carid=" + carid + "&model=" + \
+                          carinfo[0] + "&color=" + str(carinfo[1]) + "&status=" + carinfo[2] + "&number=" + carinfo[
+                              3] + "&year=" + carinfo[4] + "&price=" + carinfo[5]
                     response = requests.get(URL)
                 elif car == 2:  # 조회
 
-                    URL = 'http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/cars'
+                    URL = 'http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/cars'
                     response = requests.get(URL)
                     res = response.json()
                     if (res is None):
@@ -206,85 +209,77 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                 elif car == 3:  # 수정
 
                     carid = input('자동차 아이디를 입력해주세요 ex)CAR0001 ->').upper()
-                    selectSQL = "select * from car_menu where car_id=%s"
-                    curs.execute(selectSQL, (carid))
-                    fetch_data = curs.fetchone()
-                    table = BeautifulTable()
-                    table.columns.header = ["자동차 ID", "모델명", "색상", "상태", '일련번호', '제작년도', '가격']
-                    table.rows.append([fetch_data[0], fetch_data[1], fetch_data[2], fetch_data[3], fetch_data[4], fetch_data[5],
-                                       fetch_data[6]])
+                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/car?id=" + carid
+                    response = requests.get(URL)
+                    res = response.json()
+
+                    if (res is None):
+                        print("존재하지 않는 자동차입니다.")
+                        break
+                    else:
+                        del valueList[:]
+                        table = BeautifulTable()
+                        table.columns.header = ["자동차 ID", "모델명", "색상", "상태", '일련번호', '제작년도', '가격']
+                        for key, value in res[0].items():
+                            valueList.append(str(value))
+                        table.rows.append(
+                            [valueList[0], valueList[1], valueList[2], valueList[3], valueList[4], valueList[5],
+                             valueList[6]])
+                        print(table)
 
                     select = int(input('수정할 정보를 선택해주세요 1)모델명 2)색상 3)상태(NEW|OLD) 4)가격 ->'))
                     while (True):
                         if select == 1:  # 모델명
                             new_car_model = input('변경할 모델명을 입력하세요 ->')
-                            updateSQL = "update car_menu set car_model=%s where car_id=%s"
-                            curs.execute(updateSQL, (new_car_model, carid))
-                            conn.commit()
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/updateCar?type=car_model&content=" + new_car_model + "&id=" + carid
+                            response = requests.get(URL)
                             break
                         elif select == 2:  # 색
                             new_color = input('변경할 색상을 입력하세요 ->').upper()
-                            updateSQL = "update car_menu set car_color=%s where car_id=%s"
-                            curs.execute(updateSQL, (new_color, carid))
-                            conn.commit()
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/updateCar?type=car_color&content=" + new_color + "&id=" + carid
+                            response = requests.get(URL)
                             break
                         elif select == 3:  # 상태
                             new_state = input('변경할 상태를 입력하세요(NEW|OLD) ->').upper()
-                            updateSQL = "update car_menu set new_old_state=%s where car_id=%s"
-                            curs.execute(updateSQL, (new_state, carid))
-                            conn.commit()
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/updateCar?type=new_old_state&content=" + new_state + "&id=" + carid
+                            response = requests.get(URL)
                             break
                         elif select == 4:  # 가격
                             new_price = input('변경할 가격을 입력하세요 ->')
-                            updateSQL = "update car_menu set car_price=%s where car_id=%s"
-                            curs.execute(updateSQL, (new_price, carid))
-                            conn.commit()
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/updateCar?type=car_price&content=" + new_price + "&id=" + carid
+                            response = requests.get(URL)
                             break
                         else:
                             print("번호를 잘못 입력하였습니다.")
                             break
                 elif car == 4:  # 삭제
+
                     carid = input('삭제할 자동차 아이디를 입력해주세요 ex)CAR0001 ->').upper()
-                    try:
-                        selectSQL = "select * from car_menu where car_id=%s"
-                        curs.execute(selectSQL, (carid))
-                        fetch_data = curs.fetchone()
-                        table = BeautifulTable()
-                        table.columns.header = ["자동차 ID", "모델명", "색상", "상태", '일련번호', '제작년도', '가격']
-                        table.rows.append(
-                            [fetch_data[0], fetch_data[1], fetch_data[2], fetch_data[3], fetch_data[4], fetch_data[5],
-                             fetch_data[6]])
-                        print(table)
-                    except:
+                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/car?id=" + carid
+                    response = requests.get(URL)
+                    res = response.json()
+
+                    if (res is None):
                         print("존재하지 않는 자동차입니다.")
                         break
-
-                    ask = input("정말 삭제하시겠습니까? (Y/N)->").lower()
-                    if ask == 'y':
-
-                        try:
-                            selectSQL = "select order_id from order_details where car_menu_car_id=%s"
-                            curs.execute(selectSQL, (carid))
-                            fetch_data = curs.fetchone()
-                            order_id_del_car = fetch_data[0]
-
-                            deleteSQL = "delete from sales_invoice where order_details_order_id=%s"
-                            curs.execute(deleteSQL, (order_id_del_car))
-                            conn.commit()
-
-                            deleteSQL = "delete from order_details where car_menu_car_id=%s"
-                            curs.execute(deleteSQL, (carid))
-                            conn.commit()
-                        except:
-                            print()
-
-                        deleteSQL = "delete from car_menu where car_id=%s"
-                        curs.execute(deleteSQL, (carid))
-                        conn.commit()
-
-                        print("자동차 삭제가 완료되었습니다.")
                     else:
-                        print()
+                        del valueList[:]
+                        table = BeautifulTable()
+                        table.columns.header = ["자동차 ID", "모델명", "색상", "상태", '일련번호', '제작년도', '가격']
+                        for key, value in res[0].items():
+                            valueList.append(str(value))
+                        table.rows.append(
+                            [valueList[0], valueList[1], valueList[2], valueList[3], valueList[4], valueList[5],
+                             valueList[6]])
+                        print(table)
+
+                    try:
+                        URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/cardelete?id=" + carid
+                        response = requests.get(URL)
+                        print("성공적으로 삭제되었습니다.")
+                    except:
+                        print("삭제에 실패하였습니다.")
+
                 elif car == 5:
                     break
                 else:
@@ -299,8 +294,8 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                 #4. 사용자가 자동차를 골라 id로 (오더 테이블 저장)
                 #5. 결제생략-> 송장을 보여줘 (송장 테이블 저장)
                 '''
-                #1 - 구매 가능한 자동차 조회
-                URL = 'http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/cars'
+                # 1 - 구매 가능한 자동차 조회
+                URL = 'http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/cars'
                 response = requests.get(URL)
                 res = response.json()
                 if (res is None):
@@ -318,25 +313,16 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                              valueList[6]])
                         del valueList[:]
                     print(table)
-
                 car_select_chk = 0
                 car_select = input('구매할 자동차를 선택해주세요. ex)CAR0001 ->').upper()
-                selectSQL = "SELECT * FROM car_menu WHERE car_id NOT IN(SELECT car_menu_car_id FROM order_details)"
-                rows = curs.execute(selectSQL)
-                for row in curs.fetchall():
-                    if (car_select == row[0]):
-                        car_select_chk = 1
-                if (car_select_chk == 0):
-                    print("자동차 선택이 잘못되었습니다. 구매 가능한 자동차 목록에서 자동차를 선택해주세요.")
-                    break
 
-                #2 - 직원 선택
+                # 2 - 직원 선택
                 salesid = input('직원번호를 입력해주세요 ex)S0001 ->').upper()
-                URL = "http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/salesperson?id="+salesid
+                URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/salesperson?id=" + salesid
                 response = requests.get(URL)
                 res = response.json()
                 try:
-                    fetch_data = curs.fetchone()
+                    del valueList[:]
                     print("직원 정보를 확인합니다.")
                     table = BeautifulTable()
                     table.columns.header = ["직원 ID", "이름", "전화번호", "이메일"]
@@ -348,9 +334,9 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                     print("존재하지 않는 직원입니다.")
                     break
 
-                #3 - 고객아이디 입력
+                # 3 - 고객아이디 입력
                 custid = input('고객아이디를 입력해주세요 ex)C0001 ->').upper()
-                URL = "http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/customer?id=" + custid
+                URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/customer?id=" + custid
                 response = requests.get(URL)
                 res = response.json()
                 try:
@@ -365,9 +351,9 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                     print("존재하지 않는 고객입니다.")
                     break
 
-                #4 - 주문 내역 생성
+                # 4 - 주문 내역 생성
                 orderid_f = 'O'
-                URL = "http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/getId?tName=order_details&tAttr=order_id&pLen=1"
+                URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/getId?tName=order_details&tAttr=order_id&pLen=1"
                 response = requests.get(URL)
                 res = response.json()
 
@@ -378,22 +364,23 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                     orderid = orderid_f + orderid_b
 
                 # 가격 조회
-                URL = "http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/carprice?carid="+car_select
+                URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/carprice?carid=" + car_select
                 response = requests.get(URL)
                 res = response.json()
-                car_price=res[0]['car_price']
+                car_price = res[0]['car_price']
 
                 # 주문내용 저장
                 try:
-                    URL = "http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/addOrder?orderid=" + orderid + "&custid=" + custid + "&carid=" + car_select + "&carprice=" + str(car_price)
+                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/addOrder?orderid=" + orderid + "&custid=" + custid + "&carid=" + car_select + "&carprice=" + str(
+                        car_price)
                     response = requests.get(URL)
                 except:
                     print("자동차 구매에 실패하였습니다.")
                     break
 
-                #5 - 결제생략, 송장 생성 및 출력
+                # 5 - 결제생략, 송장 생성 및 출력
                 invoiceid_f = 'I'
-                URL = "http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/getId?tName=sales_invoice&tAttr=invoice_id&pLen=1"
+                URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/getId?tName=sales_invoice&tAttr=invoice_id&pLen=1"
                 response = requests.get(URL)
                 res = response.json()
 
@@ -403,13 +390,13 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                     invoiceid_b = res[0]['id']
                     invoiceid = invoiceid_f + invoiceid_b
 
-                URL = "http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/addInvoice?invoiceid=" + invoiceid + "&custid=" + custid + "&salesid=" + salesid + "&orderid=" + orderid
+                URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/addInvoice?invoiceid=" + invoiceid + "&custid=" + custid + "&salesid=" + salesid + "&orderid=" + orderid
                 response = requests.get(URL)
                 print("(+) 구매가 완료되었습니다.")
 
                 # 송장 출력
                 # 고객 id, 자동차 정보, 판매직원, 가격,
-                URL = "http://ec2-18-189-1-48.us-east-2.compute.amazonaws.com:8000/lookupInvoice?invoiceid="+invoiceid
+                URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/lookupInvoice?invoiceid=" + invoiceid
                 response = requests.get(URL)
                 res = response.json()
 
@@ -419,7 +406,9 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                 del valueList[:]
                 for key, value in res[0].items():
                     valueList.append(str(value))
-                table.rows.append([valueList[0], valueList[1], valueList[2], valueList[3], valueList[4], valueList[5], valueList[6], valueList[6]])
+                table.rows.append(
+                    [valueList[0], valueList[1], valueList[2], valueList[3], valueList[4], valueList[5], valueList[6],
+                     valueList[6]])
                 print(table)
                 break
         elif cmd == 4:
@@ -444,55 +433,76 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                     9. 
                 '''
                 if (service == 1):
-                    custid = input('고객 아이디를 입력해주세요 ex)C0001->').upper()
-
-                    selectSQL = "select customer_id from customer where customer_id=%s"
-                    curs.execute(selectSQL, (custid))
-                    fetch_data = curs.fetchone()
-                    if (fetch_data is None):
+                    custid = input('고객아이디를 입력해주세요 ex)C0001 ->').upper()
+                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/customer?id=" + custid
+                    response = requests.get(URL)
+                    res = response.json()
+                    del valueList[:]
+                    table = BeautifulTable()
+                    table.columns.header = ["고객 ID", "이름", "전화번호", "주소"]
+                    for key, value in res[0].items():
+                        valueList.append(str(value))
+                    table.rows.append([valueList[0], valueList[1], valueList[2], valueList[3]])
+                    print(table)
+                    if (res is None):
                         print("가입 후에 사용 가능합니다.")
                         break
                     else:
-                        selectSQL = "select * from service_menu"
-                        rows = curs.execute(selectSQL)
+
                         print("\n서비스 목록 입니다.")
+
+                        URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/service"
+                        response = requests.get(URL)
+                        res = response.json()
                         table = BeautifulTable()
-                        for row in curs.fetchall():
-                            table.columns.header = ["서비스 ID", "서비스 이름", "가격", "부품 필요 여부"]
-                            table.rows.append([row[0], row[1], row[2], row[3]])
+                        table.columns.header = ["서비스 ID", "서비스 이름", "가격", "부품 필요 여부"]
+
+                        del valueList[:]
+                        for i in range(len(res)):
+                            for key, value in res[i].items():
+                                valueList.append(str(value))
+                            table.rows.append([valueList[0], valueList[1], valueList[2], valueList[3]])
+                            del valueList[:]
                         print(table)
 
                         service_answer = input("서비스를 받으시겠습니까? (Y/N)->").lower()
                         if (service_answer == 'y'):
                             service_select = input("서비스를 선택해주세요 ex)SV0001->").upper()
-                            selectSQL = "select need_product from service_menu where service_id=%s"
-                            curs.execute(selectSQL, (service_select))
-                            fetch_data = curs.fetchone()
-
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/serviceChoice?id=" + service_select
+                            response = requests.get(URL)
+                            res = response.json()
                             try:
-                                if (fetch_data[0] == 'Y'):
+                                if (res[0]['need_product'] == 'Y'):
                                     # tire / handle
-                                    selectSQL = "SELECT DISTINCT product_name FROM product WHERE service_menu_service_id=%s"
-                                    rows = curs.execute(selectSQL, (service_select))
+                                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/serviceChoice/yes?id=" + service_select
+
+                                    response = requests.get(URL)
+                                    res = response.json()
                                     table = BeautifulTable()
-                                    for row in curs.fetchall():
-                                        table.columns.header = ["부품 종류"]
-                                        table.rows.append([row[0]])
+                                    del valueList[:]
+                                    for i in range(len(res)):
+                                        for key, value in res[i].items():
+                                            valueList.append(str(value))
+                                        table.rows.append([valueList[i]])
                                     print(table)
-                                    #
 
                                     select_product = input("부품 종류를 선택하세요 ex)Tire ->")
 
                                     # 파츠 보여주는거
                                     select_product = '%' + select_product
                                     try:
-                                        selectSQL = "select * from product_menu where parts_name like %s"
-                                        rows = curs.execute(selectSQL, (select_product))
                                         print("\n부품 목록 입니다.")
+                                        URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/parts?parts_name=" + select_product
+                                        response = requests.get(URL)
+                                        res = response.json()
                                         table = BeautifulTable()
-                                        for row in curs.fetchall():
-                                            table.columns.header = ["부품 ID", "부품 상세 종류", "가격"]
-                                            table.rows.append([row[0], row[1], row[2]])
+                                        table.columns.header = ["부품 ID", "부품 상세 종류", "가격"]
+                                        del valueList[:]
+                                        for i in range(len(res)):
+                                            for key, value in res[i].items():
+                                                valueList.append(str(value))
+                                            table.rows.append([valueList[0], valueList[1], valueList[2]])
+                                            del valueList[:]
                                         print(table)
                                     except:
                                         print("부품 종류 선택이 잘못되었습니다.")
@@ -501,15 +511,16 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                                     select_parts = input("부품을 선택하세요 ex)PA0001->").upper()
                                     select_product = select_product.replace('%', '')
 
-                                    selectSQL = "SELECT product_name FROM product p, product_menu pm WHERE p.parts_id=pm.parts_id and p.parts_id=%s"
-                                    curs.execute(selectSQL, (select_parts))
-                                    fetch_data = curs.fetchone()
-                                    product_id_chk = fetch_data[0]
-
-                                    if (product_id_chk != select_product):
-                                        print("부품 선택이 잘못되었습니다.")
-                                        break
-
+                                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/product?id=" + select_parts
+                                    response = requests.get(URL)
+                                    res = response.json()
+                                    table = BeautifulTable()
+                                    del valueList[:]
+                                    for i in range(len(res)):
+                                        for key, value in res[i].items():
+                                            valueList.append(str(value))
+                                        table.rows.append([valueList[i]])
+                                    print(table)
                                 else:  # N 파츠없을때
                                     select_parts = ''
                                     select_product = ''
@@ -527,23 +538,27 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                             print('서비스 날짜', day, '는 ', service_day_weekday, '입니다.')
 
                             # 요일 비교해서 가능한 메카닉만 출력해줌
-                            selectSQL = "select * from mechanic"
-                            rows = curs.execute(selectSQL)
-                            # row[5] 가 'mon thu
-
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/lookupMechanics"
+                            response = requests.get(URL)
+                            res = response.json()
                             print("\n서비스 가능한 메카닉 목록입니다.")
-                            table = BeautifulTable()
-                            meca_chk = []
-                            for row in curs.fetchall():  # 한줄씩
-                                weekday_list = []
-                                weekday_list = row[5].split(' ')
 
-                                for i in weekday_list:
-                                    if (service_day_weekday == i):
-                                        table.columns.header = ["메카닉 ID", "전화번호", "이메일", "이름", "서비스 가능 요일"]
-                                        table.rows.append([row[0], row[1], row[2], row[3], row[5]])
-                                        meca_chk.append(row[0])
+                            table = BeautifulTable()
+                            table.columns.header = ["메카닉 ID", "전화번호", "이메일", "이름", "서비스 가능 요일"]
+                            del valueList[:]
+                            meca_chk = []
+                            for i in range(len(res)):
+                                for key, value in res[i].items():
+                                    valueList.append(str(value))
+                                weekday_list = []
+                                weekday_list = valueList[5].split(' ')
+                                for j in weekday_list:
+                                    if (service_day_weekday == j):
+                                        table.rows.append(
+                                            [valueList[0], valueList[1], valueList[2], valueList[3], valueList[4]])
+                                        meca_chk.append(valueList[0])
                                         break
+                                del valueList[:]
                             print(table)
 
                             mecha_select_list = []
@@ -572,63 +587,56 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                                 break
 
                             # 서비스 아이디 생성
-                            selectSQL = "select service_record_id from service_records limit 1"
-                            curs.execute(selectSQL)
-                            fetch_data = curs.fetchone()
+                            service_record_id_f = 'SR'
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/getId?tName=service_records&tAttr=service_record_id&pLen=2"
+                            response = requests.get(URL)
+                            res = response.json()
 
-                            if (fetch_data is None):
+                            if (res[0]['id'] == None):
                                 service_record_id = 'SR0001'
                             else:
-                                service_record_id_f = 'SR'
-                                selectSQL = "select lpad(max(convert(substr(service_record_id,3,6),signed)+1),4,0) from service_records"
-                                curs.execute(selectSQL)
-                                fetch_data = curs.fetchone()
-                                service_record_id_b = fetch_data[0]
-                                service_record_id = service_record_id_f + service_record_id_b
+                                service_record_id_b = res[0]['id']
+                                service_record_id = service_record_id_f + str(service_record_id_b)
 
                             # 서비스 티켓 확인
-                            selectSQL = "select service_ticket_id from service_records where customer_customer_id=%s"
-                            curs.execute(selectSQL, (custid))
-                            fetch_data = curs.fetchone()
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/lookupTicket?custid=" + custid
+                            response = requests.get(URL)
+                            res = response.json()
 
-                            if (fetch_data is None):
-                                # 서비스 티켓 생성
+                            # 서비스 티켓 생성
+                            if (len(res) < 1):
+                                # 서비스 티켓 처음 발급
                                 while (True):
                                     service_ticket = ''
                                     for i in range(0, 10):
                                         service_ticket += str(random.randint(1, 9))
-                                    selectSQL = "select service_ticket_id from service_records where service_ticket_id=%s"
-                                    curs.execute(selectSQL, (service_ticket))
-                                    fetch_data = curs.fetchone()
-
-                                    if (fetch_data is None):
+                                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/checkTicket?ticket=" + service_ticket
+                                    response2 = requests.get(URL)
+                                    res2 = response2.json()
+                                    if (len(res2) < 1):
                                         break
                                     else:
                                         continue
-                            else:
-                                service_ticket = fetch_data[0]
+                            else:  # 서비스 티켓이 이미 존재
+                                service_ticket = res[0]['service_ticket_id']
 
                             # 서비스 레코드 테이블 데이터 저장
-                            if (select_product is None):
-                                insertSQL = "insert into service_records values(%s, %s, Null, %s, %s, %s)"
-                                curs.execute(insertSQL,
-                                             (service_record_id, service_select, service_ticket, day, custid))
+                            if (select_product==''):
+                                URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/addServiceRecords?serviceid=" + service_record_id + "&serviceselect=" + service_select + "&ticket=" + service_ticket + "&day=" + day + "&custid=" + custid
+                                response = requests.get(URL)
                             else:
                                 try:
-                                    insertSQL = "insert into service_records values(%s, %s, (select product_id from product where parts_id=%s), %s, %s, %s)"
-                                    curs.execute(insertSQL, (
-                                        service_record_id, service_select, select_parts, service_ticket, day, custid))
+                                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/addServiceRecords_parts?serviceid=" + service_record_id + "&serviceselect=" + service_select + "&selectparts=" + select_parts + "&ticket=" + service_ticket + "&day=" + day + "&custid=" + custid
+                                    response = requests.get(URL)
                                 except:
                                     print("잘못된 서비스 신청입니다.")
                                     break
-                            conn.commit()
 
                             # management 테이블
                             try:
                                 for i in mecha_select_list:
-                                    insertSQL = "insert into management values(%s, %s)"
-                                    curs.execute(insertSQL, (i, service_record_id))
-                                    conn.commit()
+                                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/addManagement?mecaid=" + i + "&serviceid=" + service_record_id
+                                    response = requests.get(URL)
                             except:
                                 print("서비스 신청에 실패하였습니다.")
                                 break
@@ -639,37 +647,35 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                             resultstr = '서비스 신청 내역'
                             print(resultstr.center(50, "-"))
                             # 서비스 신청 결과 출력
+
                             print("- 서비스 아이디 : ", service_record_id)
-                            selectSQL = "SELECT mc.mechanic_name from management ma, mechanic mc where ma.mechanic_mechanic_id=mc.mechanic_id AND service_record_id=%s"
-                            rows = curs.execute(selectSQL, (service_record_id))
-                            print("- 서비스 할 기술자 : ", end='')
 
-                            for row in curs.fetchall():
-                                print(row[0], end=' ')
-                            selectSQL = "select appointment from service_records where service_record_id=%s"
-                            curs.execute(selectSQL, (service_record_id))
-                            fetch_data = curs.fetchone()
-                            print('\n')
-                            print("- 서비스 날짜 : ", end='')
-                            print(fetch_data[0])
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/service/getMecanic?serviceid=" + service_record_id
+                            response = requests.get(URL)
+                            res = response.json()
 
-                            selectSQL = "SELECT sm.service_name FROM service_menu sm, service_records sr WHERE sm.service_id=sr.service_id AND sr.service_record_id=%s"
-                            curs.execute(selectSQL, (service_record_id))
-                            fetch_data = curs.fetchone()
-                            print("- 서비스 이름 : ", end='')
-                            print(fetch_data[0])
+                            mecaList = []
+                            del mecaList[:]
+                            for j in range(len(res)):
+                                for key, value in res[j].items():
+                                    mecaList.append(str(value))
 
-                            selectSQL = "SELECT service_ticket_id FROM service_records WHERE service_record_id=%s"
-                            curs.execute(selectSQL, (service_record_id))
-                            fetch_data = curs.fetchone()
-                            print("- 보유중인 서비스 티켓 번호 : ", end='')
-                            print(fetch_data[0])
+                            mecas = ' '.join(mecaList)
+                            print("- 서비스 할 기술자 : ", mecas)
+                            print("- 서비스 날짜 : ", day)
 
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/service/getName?serviceid=" + service_record_id
+                            response = requests.get(URL)
+                            res = response.json()
+                            print("- 서비스 이름 : ", res[0]['service_name'])
+                            print("- 보유중인 서비스 티켓 번호 : ", service_ticket)
+
+                            # custid로 네임가져오기
+                            URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/service/getCustName?serviceid=" + service_record_id
                             selectSQL = "SELECT c.customer_name FROM customer c, service_records sr WHERE c.customer_id=sr.customer_customer_id AND sr.service_record_id=%s"
-                            curs.execute(selectSQL, (service_record_id))
-                            fetch_data = curs.fetchone()
-                            print("- 고객 이름 : ", end='')
-                            print(fetch_data[0])
+                            response = requests.get(URL)
+                            res = response.json()
+                            print("- 고객 이름 : ", res[0]['customer_name'])
                             resultstr = ''
                             print(resultstr.center(60, "-"))
                             print('\n')
@@ -681,46 +687,43 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
                     custid = input('고객 아이디를 입력해주세요 ex)C0001->').upper()
                     print("\n모든 서비스 기록을 조회합니다.")
 
-                    selectSQL = "SELECT * FROM service_records sr LEFT JOIN (SELECT product_id, service_menu_service_id, product_name, parts_name, parts_price from product p1, product_menu pm WHERE p1.parts_id=pm.parts_id) AS p ON sr.product_id=p.product_id LEFT JOIN service_menu sm ON sr.service_id=sm.service_id WHERE sr.customer_customer_id=%s"
-                    curs.execute(selectSQL, (custid))
+                    URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/lookupService?custid=" + custid
+                    response = requests.get(URL)
+                    res = response.json()
 
-                    meca_total_list = []
                     table = BeautifulTable()
-                    _break = True
-                    for row in curs.fetchall():
-                        meca_list = []
-                        meca_concat = ''
+                    table.columns.header = ["서비스 기록 ID", "티켓  ID", "서비스 날짜", "부품 종류", "세부 부품", "부품 가격", "서비스 이름",
+                                            "서비스 가격", "메카닉 이름"]
+                    valueList = []
 
-                        if (row is None):
-                            _break = False
-                            break
+                    for i in range(len(res)):
+                        for key, value in res[i].items():
+                            valueList.append(str(value))
 
-                        table.columns.header = ["서비스 기록 ID", "티켓  ID", "서비스 날짜", "부품 종류", "세부 부품", "부품 가격", "서비스 이름", "서비스 가격"]
-                        table.rows.append([row[0], row[3], row[4], row[8], row[9], row[10], row[12], row[13]])
+                        # 서비스 기록 가져옴
+                        URL = "http://module-project2-lb-167245876.us-east-2.elb.amazonaws.com:8000/lookupMechanic?serviceid=" + \
+                              valueList[0]
+                        response2 = requests.get(URL)
+                        res2 = response2.json()
 
-                        selectSQL = "SELECT mechanic_name FROM management m, mechanic mc WHERE m.mechanic_mechanic_id=mc.mechanic_id AND m.service_record_id=%s"
-                        curs.execute(selectSQL, (row[0]))
-
-                        for row in curs.fetchall():
-                            meca_list.append(row[0])
-
-                        if (len(meca_list) > 1):
-                            meca_concat = ' / '.join(meca_list)
-                        else:
-                            meca_concat = meca_list[0]
-
-                        meca_total_list.append(meca_concat)
-
-                    if (_break == False):
-                        print("서비스 기록이 존재하지 않습니다.")
-                        break
-                    table.columns.append(meca_total_list, header="메카닉")
+                        # 예약된 메카닉 조회
+                        mecaList = []
+                        for j in range(len(res2)):
+                            for mkey, mvalue in res2[j].items():
+                                mecaList.append(str(mvalue))
+                        mecas = ' / '.join(mecaList)
+                        table.rows.append(
+                            [valueList[0], valueList[3], valueList[4], valueList[7], valueList[8], valueList[9],
+                             valueList[10], valueList[11], mecas])
+                        del valueList[:]
+                        del mecaList[:]
                     print(table)
+
                 else:
                     print("메인으로 돌아갑니다.")
                     break
         elif cmd == 5:
-            conn.close()
+            # conn.close()
             break
         else:
             print('잘못 선택하셨습니다.')
